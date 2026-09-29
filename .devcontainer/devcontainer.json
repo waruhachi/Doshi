@@ -1,0 +1,26 @@
+{
+	"name": "theos-codespace",
+	"remoteUser": "vscode",
+	"image": "swift:jammy",
+	"features": {
+		"ghcr.io/devcontainers/features/common-utils:2": {
+			"username": "vscode"
+		},
+		"ghcr.io/waruhachi/features/theos:latest": {},
+		"ghcr.io/waruhachi/features/comet:latest": {},
+		"ghcr.io/waruhachi/features/python:latest": {},
+		"ghcr.io/waruhachi/features/libplist:latest": {},
+		"ghcr.io/waruhachi/features/clang-format:latest": {},
+		"ghcr.io/waruhachi/features/logos-format:latest": {},
+		"ghcr.io/waruhachi/features/libgcuniversal:latest": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"tale.logos-vscode",
+				"steefh.external-formatters",
+				"llvm-vs-code-extensions.vscode-clangd"
+			]
+		}
+	}
+}

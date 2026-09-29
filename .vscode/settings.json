@@ -1,0 +1,25 @@
+{
+	"editor.formatOnSave": true,
+	"[c]": {
+		"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+	},
+	"[cpp]": {
+		"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+	},
+	"[objective-c]": {
+		"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+	},
+	"[objective-cpp]": {
+		"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+	},
+	"externalFormatters.languages": {
+		"logos": {
+			"command": "python3",
+			"arguments": [
+				"/home/vscode/logos-format.py",
+				"--assume-filename",
+				"objc"
+			]
+		}
+	}
+}
