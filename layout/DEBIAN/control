@@ -1,0 +1,9 @@
+Package: moe.waru.doshi
+Name: Doshi
+Version: 1.0
+Architecture: iphoneos-arm
+Description: Making the Action Button useful
+Maintainer: waruhachi
+Author: waruhachi
+Section: Tweaks
+Depends: firmware (>= 17.0), mobilesubstrate (>= 0.9.5000), preferenceloader
