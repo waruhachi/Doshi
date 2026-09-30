@@ -7,6 +7,7 @@ BOOL DoshiPerformingDefaultAction = NO;
 @implementation DoshiActionExecutor {
 	NSString *_singleAction;
 	NSString *_doubleAction;
+	NSString *_holdAction;
 }
 
 + (instancetype)sharedExecutor {
@@ -30,21 +31,24 @@ BOOL DoshiPerformingDefaultAction = NO;
 
 	CFStringRef single = (CFStringRef)CFPreferencesCopyAppValue(CFSTR("singleClickAction"), PREFS_DOMAIN);
 	CFStringRef dbl = (CFStringRef)CFPreferencesCopyAppValue(CFSTR("doubleClickAction"), PREFS_DOMAIN);
+	CFStringRef hold = (CFStringRef)CFPreferencesCopyAppValue(CFSTR("holdAction"), PREFS_DOMAIN);
 
 	_singleAction = single ? (__bridge_transfer NSString *)single : @"default";
 	_doubleAction = dbl ? (__bridge_transfer NSString *)dbl : @"none";
+	_holdAction = hold ? (__bridge_transfer NSString *)hold : @"default";
 }
 
-- (NSString *)actionForClickCount:(NSInteger)count {
-	switch (count) {
+- (NSString *)actionForClickType:(NSInteger)clickType {
+	switch (clickType) {
 		case 1: return _singleAction;
 		case 2: return _doubleAction;
+		case 3: return _holdAction;
 		default: return @"none";
 	}
 }
 
 - (void)executeActionForClickType:(NSInteger)clickType {
-	NSString *action = [self actionForClickCount:clickType];
+	NSString *action = [self actionForClickType:clickType];
 	[self executeAction:action];
 }
 

@@ -113,7 +113,6 @@ static void prefsChanged(CFNotificationCenterRef center, void *observer, CFStrin
 	}
 	if (longPressActive) {
 		longPressActive = NO;
-		%orig;
 		return;
 	}
 
@@ -128,10 +127,7 @@ static void prefsChanged(CFNotificationCenterRef center, void *observer, CFStrin
 	}
 	longPressActive = YES;
 	[[DoshiClickManager sharedManager] cancelPendingClicks];
-	DoshiPerformingDefaultAction = YES;
-	((void (*)(id, SEL, id))objc_msgSend)(self, @selector(performActionsForButtonDown:), [DoshiActionExecutor sharedExecutor].lastDownEvent);
-	%orig;
-	DoshiPerformingDefaultAction = NO;
+	[[DoshiActionExecutor sharedExecutor] executeActionForClickType:DoshiClickTypeHold];
 }
 
 %end
@@ -165,7 +161,6 @@ static void prefsChanged(CFNotificationCenterRef center, void *observer, CFStrin
 	}
 	if (longPressActive) {
 		longPressActive = NO;
-		%orig;
 		return;
 	}
 
@@ -180,10 +175,7 @@ static void prefsChanged(CFNotificationCenterRef center, void *observer, CFStrin
 	}
 	longPressActive = YES;
 	[[DoshiClickManager sharedManager] cancelPendingClicks];
-	DoshiPerformingDefaultAction = YES;
-	((void (*)(id, SEL, id))objc_msgSend)(self, @selector(performActionsForButtonDown:), [DoshiActionExecutor sharedExecutor].lastDownEvent);
-	%orig;
-	DoshiPerformingDefaultAction = NO;
+	[[DoshiActionExecutor sharedExecutor] executeActionForClickType:DoshiClickTypeHold];
 }
 
 %end

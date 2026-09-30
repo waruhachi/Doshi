@@ -10,7 +10,7 @@
 			<key>label</key>
 			<string>Click Actions</string>
 			<key>footerText</key>
-			<string>Configure what each click type does. Long press is unchanged.</string>
+			<string>Configure what single click, double click, and hold do.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -21,6 +21,20 @@
 			<string>singleClickAction</string>
 			<key>label</key>
 			<string>Single Click</string>
+			<key>default</key>
+			<string>default</string>
+			<key>defaults</key>
+			<string>moe.waru.doshi</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>detail</key>
+			<string>ActionList</string>
+			<key>key</key>
+			<string>holdAction</string>
+			<key>label</key>
+			<string>Hold</string>
 			<key>default</key>
 			<string>default</string>
 			<key>defaults</key>

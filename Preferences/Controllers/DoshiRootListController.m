@@ -32,7 +32,7 @@ static void calibrationDoneCallback(CFNotificationCenterRef center, void *observ
 
 		// Click Actions group
 		PSSpecifier *group1 = [PSSpecifier groupSpecifierWithName:@"Click Actions"];
-		[group1 setProperty:@"Configure what each click type does. Long press is unchanged." forKey:@"footerText"];
+		[group1 setProperty:@"Configure what single click, double click, and hold do." forKey:@"footerText"];
 		[specs addObject:group1];
 
 		// Single Click
@@ -60,6 +60,19 @@ static void calibrationDoneCallback(CFNotificationCenterRef center, void *observ
 		[dbl setProperty:@"none" forKey:@"default"];
 		[dbl setProperty:PREFS_DOMAIN forKey:@"defaults"];
 		[specs addObject:dbl];
+
+		// Hold
+		PSSpecifier *hold = [PSSpecifier preferenceSpecifierNamed:@"Hold"
+														   target:self
+															  set:NULL
+															  get:NULL
+														   detail:NSClassFromString(@"DoshiActionList")
+															 cell:PSLinkCell
+															 edit:Nil];
+		[hold setProperty:@"holdAction" forKey:@"key"];
+		[hold setProperty:@"default" forKey:@"default"];
+		[hold setProperty:PREFS_DOMAIN forKey:@"defaults"];
+		[specs addObject:hold];
 
 		// Timing group
 		PSSpecifier *group2 = [PSSpecifier groupSpecifierWithName:@"Timing"];

@@ -3,6 +3,7 @@
 typedef NS_ENUM(NSInteger, DoshiClickType) {
 	DoshiClickTypeSingle = 1,
 	DoshiClickTypeDouble = 2,
+	DoshiClickTypeHold = 3,
 };
 
 typedef void (^DoshiClickCallback)(DoshiClickType clickType);
