@@ -3,164 +3,182 @@
 #define PREFS_DOMAIN @"moe.waru.doshi"
 #define PREFS_NOTIFICATION @"moe.waru.doshi.preferences.changed"
 
-typedef struct {
-	NSString *actionID;
-	NSString *title;
-} ABMCAction;
-
-static const ABMCAction kBuiltInActions[] = {
-	{@"default", @"System Default"},
-	{@"flashlight", @"Toggle Flashlight"},
-	{@"camera", @"Open Camera"},
-	{@"silent", @"Toggle Silent Mode"},
-	{@"screenshot", @"Take Screenshot"},
-	{@"lock", @"Lock Device"},
-	{@"respring", @"Respring"},
-	{@"none", @"Do Nothing"},
-};
-
-@implementation DoshiRootListController {
-	NSString *_prefKey;
-	NSString *_currentValue;
+static NSString *titleForActionID(NSString *actionID) {
+	if (!actionID || [actionID isEqualToString:@"none"]) return @"Do Nothing";
+	if ([actionID isEqualToString:@"default"]) return @"System Default";
+	if ([actionID isEqualToString:@"flashlight"]) return @"Toggle Flashlight";
+	if ([actionID isEqualToString:@"camera"]) return @"Open Camera";
+	if ([actionID isEqualToString:@"silent"]) return @"Toggle Silent Mode";
+	if ([actionID isEqualToString:@"screenshot"]) return @"Take Screenshot";
+	if ([actionID isEqualToString:@"lock"]) return @"Lock Device";
+	if ([actionID isEqualToString:@"respring"]) return @"Respring";
+	if ([actionID hasPrefix:@"app:"]) return [NSString stringWithFormat:@"App: %@", [actionID substringFromIndex:4]];
+	if ([actionID hasPrefix:@"shortcut:"]) return [NSString stringWithFormat:@"Shortcut: %@", [actionID substringFromIndex:9]];
+	return actionID;
 }
 
-- (void)viewDidLoad {
-	[super viewDidLoad];
+static void calibrationDoneCallback(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
+	DoshiRootListController *self = (__bridge DoshiRootListController *)observer;
+	[self calibrationDidFinish];
+}
 
-	PSSpecifier *parentSpecifier = [self specifier];
-	_prefKey = [parentSpecifier propertyForKey:@"key"];
-	NSString *defaultVal = [parentSpecifier propertyForKey:@"default"] ?: @"none";
-
-	CFPreferencesAppSynchronize((__bridge CFStringRef)PREFS_DOMAIN);
-	CFStringRef val = (CFStringRef)CFPreferencesCopyAppValue((__bridge CFStringRef)_prefKey, (__bridge CFStringRef)PREFS_DOMAIN);
-	_currentValue = val ? (__bridge_transfer NSString *)val : defaultVal;
+@implementation DoshiRootListController {
+	BOOL _waitingForCalibration;
 }
 
 - (NSArray *)specifiers {
 	if (!_specifiers) {
 		NSMutableArray *specs = [NSMutableArray array];
 
-		// Built-in actions group
-		PSSpecifier *group1 = [PSSpecifier groupSpecifierWithName:@"Actions"];
+		// Click Actions group
+		PSSpecifier *group1 = [PSSpecifier groupSpecifierWithName:@"Click Actions"];
+		[group1 setProperty:@"Configure what each click type does. Long press is unchanged." forKey:@"footerText"];
 		[specs addObject:group1];
 
-		NSUInteger count = sizeof(kBuiltInActions) / sizeof(kBuiltInActions[0]);
-		for (NSUInteger i = 0; i < count; i++) {
-			PSSpecifier *spec = [PSSpecifier preferenceSpecifierNamed:kBuiltInActions[i].title
-															   target:self
-																  set:NULL
-																  get:NULL
-															   detail:Nil
-																 cell:PSStaticTextCell
-																 edit:Nil];
-			[spec setProperty:kBuiltInActions[i].actionID forKey:@"actionID"];
-			spec->action = @selector(selectAction:);
-			[specs addObject:spec];
-		}
+		// Single Click
+		PSSpecifier *single = [PSSpecifier preferenceSpecifierNamed:@"Single Click"
+															 target:self
+																set:NULL
+																get:NULL
+															 detail:NSClassFromString(@"DoshiActionList")
+															   cell:PSLinkCell
+															   edit:Nil];
+		[single setProperty:@"singleClickAction" forKey:@"key"];
+		[single setProperty:@"default" forKey:@"default"];
+		[single setProperty:PREFS_DOMAIN forKey:@"defaults"];
+		[specs addObject:single];
 
-		// Custom actions group
-		PSSpecifier *group2 = [PSSpecifier groupSpecifierWithName:@"Custom"];
-		[group2 setProperty:@"Open a specific app by bundle ID or run a Siri Shortcut by name." forKey:@"footerText"];
+		// Double Click
+		PSSpecifier *dbl = [PSSpecifier preferenceSpecifierNamed:@"Double Click"
+														  target:self
+															 set:NULL
+															 get:NULL
+														  detail:NSClassFromString(@"DoshiActionList")
+															cell:PSLinkCell
+															edit:Nil];
+		[dbl setProperty:@"doubleClickAction" forKey:@"key"];
+		[dbl setProperty:@"none" forKey:@"default"];
+		[dbl setProperty:PREFS_DOMAIN forKey:@"defaults"];
+		[specs addObject:dbl];
+
+		// Timing group
+		PSSpecifier *group2 = [PSSpecifier groupSpecifierWithName:@"Timing"];
+		[group2 setProperty:@"How long to wait for a second click before triggering single click. Tap Calibrate to auto-detect your natural double-click speed." forKey:@"footerText"];
 		[specs addObject:group2];
 
-		PSSpecifier *openApp = [PSSpecifier preferenceSpecifierNamed:@"Open App..."
+		// Click Timeout slider
+		PSSpecifier *timeout = [PSSpecifier preferenceSpecifierNamed:@"Click Timeout"
 															  target:self
-																 set:NULL
-																 get:NULL
+																 set:@selector(setPreferenceValue:specifier:)
+																 get:@selector(readPreferenceValue:)
 															  detail:Nil
-																cell:PSStaticTextCell
+																cell:PSSliderCell
 																edit:Nil];
-		[openApp setProperty:@"customApp" forKey:@"actionID"];
-		openApp->action = @selector(selectAction:);
-		[specs addObject:openApp];
+		[timeout setProperty:@"clickTimeout" forKey:@"key"];
+		[timeout setProperty:@0.5 forKey:@"min"];
+		[timeout setProperty:@2.0 forKey:@"max"];
+		[timeout setProperty:@1.5 forKey:@"default"];
+		[timeout setProperty:PREFS_DOMAIN forKey:@"defaults"];
+		[timeout setProperty:PREFS_NOTIFICATION forKey:@"PostNotification"];
+		[timeout setProperty:@YES forKey:@"showValue"];
+		[specs addObject:timeout];
 
-		PSSpecifier *shortcut = [PSSpecifier preferenceSpecifierNamed:@"Run Shortcut..."
-															   target:self
-																  set:NULL
-																  get:NULL
-															   detail:Nil
-																 cell:PSStaticTextCell
-																 edit:Nil];
-		[shortcut setProperty:@"customShortcut" forKey:@"actionID"];
-		shortcut->action = @selector(selectAction:);
-		[specs addObject:shortcut];
+		// Calibrate button
+		PSSpecifier *calibrate = [PSSpecifier preferenceSpecifierNamed:@"Calibrate Double Click"
+																target:self
+																   set:NULL
+																   get:NULL
+																detail:Nil
+																  cell:PSButtonCell
+																  edit:Nil];
+		calibrate->action = @selector(startCalibration);
+		[specs addObject:calibrate];
 
 		_specifiers = specs;
 	}
 	return _specifiers;
 }
 
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-	UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
 
-	// Show checkmark on currently selected action
-	PSSpecifier *spec = [self specifierAtIndexPath:indexPath];
-	NSString *actionID = [spec propertyForKey:@"actionID"];
-	if (actionID && ![actionID hasPrefix:@"custom"]) {
-		cell.accessoryType = [_currentValue isEqualToString:actionID] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
-	} else if ([actionID isEqualToString:@"customApp"] && [_currentValue hasPrefix:@"app:"]) {
-		cell.accessoryType = UITableViewCellAccessoryCheckmark;
-	} else if ([actionID isEqualToString:@"customShortcut"] && [_currentValue hasPrefix:@"shortcut:"]) {
-		cell.accessoryType = UITableViewCellAccessoryCheckmark;
-	} else {
-		cell.accessoryType = UITableViewCellAccessoryNone;
-	}
+	CFNotificationCenterAddObserver(
+		CFNotificationCenterGetDarwinNotifyCenter(),
+		(__bridge const void *)self,
+		calibrationDoneCallback,
+		CFSTR("moe.waru.doshi.calibration.done"),
+		NULL,
+		CFNotificationSuspensionBehaviorDeliverImmediately);
 
-	return cell;
+	[self reload];
 }
 
-- (void)selectAction:(PSSpecifier *)specifier {
-	NSString *actionID = [specifier propertyForKey:@"actionID"];
+- (void)viewWillDisappear:(BOOL)animated {
+	[super viewWillDisappear:animated];
 
-	if ([actionID isEqualToString:@"customApp"]) {
-		[self promptForCustomValue:@"Open App" message:@"Enter the app bundle ID (e.g. com.apple.Music):" prefix:@"app:"];
-	} else if ([actionID isEqualToString:@"customShortcut"]) {
-		[self promptForCustomValue:@"Run Shortcut" message:@"Enter the Siri Shortcut name:" prefix:@"shortcut:"];
-	} else {
-		[self saveAction:actionID];
-	}
+	CFNotificationCenterRemoveObserver(
+		CFNotificationCenterGetDarwinNotifyCenter(),
+		(__bridge const void *)self,
+		CFSTR("moe.waru.doshi.calibration.done"),
+		NULL);
 }
 
-- (void)promptForCustomValue:(NSString *)title message:(NSString *)message prefix:(NSString *)prefix {
-	UIAlertController *alert = [UIAlertController alertControllerWithTitle:title
-																   message:message
+- (void)startCalibration {
+	_waitingForCalibration = YES;
+
+	UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Calibrate"
+																   message:@"Press the Action Button twice at your natural double-click speed.\n\nThe timeout will be adjusted automatically."
 															preferredStyle:UIAlertControllerStyleAlert];
-	[alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
-		textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
-		textField.autocorrectionType = UITextAutocorrectionTypeNo;
-
-		// Pre-fill if current value matches this prefix
-		if ([self->_currentValue hasPrefix:prefix]) {
-			textField.text = [self->_currentValue substringFromIndex:prefix.length];
-		}
-	}];
-
-	[alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
-	[alert addAction:[UIAlertAction actionWithTitle:@"Save" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-		NSString *value = alert.textFields.firstObject.text;
-		if (value.length > 0) {
-			[self saveAction:[NSString stringWithFormat:@"%@%@", prefix, value]];
-		}
+	[alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction *a) {
+		self->_waitingForCalibration = NO;
 	}]];
-
+	[alert addAction:[UIAlertAction actionWithTitle:@"Ready" style:UIAlertActionStyleDefault handler:^(UIAlertAction *a) {
+		// Tell SpringBoard to enter calibration mode
+		CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
+			CFSTR("moe.waru.doshi.calibration.start"),
+			NULL, NULL, YES);
+	}]];
 	[self presentViewController:alert animated:YES completion:nil];
 }
 
-- (void)saveAction:(NSString *)actionID {
-	_currentValue = actionID;
+- (void)calibrationDidFinish {
+	if (!_waitingForCalibration) return;
+	_waitingForCalibration = NO;
 
-	CFPreferencesSetAppValue((__bridge CFStringRef)_prefKey,
-		(__bridge CFPropertyListRef)actionID,
-		(__bridge CFStringRef)PREFS_DOMAIN);
-	CFPreferencesAppSynchronize((__bridge CFStringRef)PREFS_DOMAIN);
+	dispatch_async(dispatch_get_main_queue(), ^{
+		// Read the result
+		CFPreferencesAppSynchronize((__bridge CFStringRef)PREFS_DOMAIN);
 
-	// Notify the tweak
-	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
-		(__bridge CFStringRef)PREFS_NOTIFICATION,
-		NULL, NULL, YES);
+		CFPropertyListRef intervalRef = CFPreferencesCopyAppValue(CFSTR("lastCalibrationInterval"), (__bridge CFStringRef)PREFS_DOMAIN);
+		CFPropertyListRef timeoutRef = CFPreferencesCopyAppValue(CFSTR("lastCalibrationTimeout"), (__bridge CFStringRef)PREFS_DOMAIN);
 
-	// Refresh checkmarks
-	[self.table reloadData];
+		NSString *intervalStr = intervalRef ? (__bridge_transfer NSString *)intervalRef : @"?";
+		NSNumber *timeoutNum = timeoutRef ? (__bridge_transfer NSNumber *)timeoutRef : @(1.5);
+
+		NSString *msg = [NSString stringWithFormat:@"Your double-click interval: %@s\nTimeout set to: %.2fs (interval + 0.3s buffer)", intervalStr, timeoutNum.doubleValue];
+
+		UIAlertController *result = [UIAlertController alertControllerWithTitle:@"Calibration Done"
+																		message:msg
+																 preferredStyle:UIAlertControllerStyleAlert];
+		[result addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+		[self presentViewController:result animated:YES completion:nil];
+
+		// Refresh the slider
+		[self reloadSpecifiers];
+	});
+}
+
+- (void)reloadSpecifiers {
+	[super reloadSpecifiers];
+	for (PSSpecifier *spec in _specifiers) {
+		NSString *key = [spec propertyForKey:@"key"];
+		if ([key hasSuffix:@"Action"]) {
+			CFPreferencesAppSynchronize((__bridge CFStringRef)PREFS_DOMAIN);
+			CFStringRef val = (CFStringRef)CFPreferencesCopyAppValue((__bridge CFStringRef)key, (__bridge CFStringRef)PREFS_DOMAIN);
+			NSString *actionID = val ? (__bridge_transfer NSString *)val : [spec propertyForKey:@"default"];
+			[spec setProperty:titleForActionID(actionID) forKey:@"cellValue"];
+		}
+	}
 }
 
 @end

@@ -16,7 +16,7 @@
 			<key>cell</key>
 			<string>PSLinkCell</string>
 			<key>detail</key>
-			<string>ABMCActionListController</string>
+			<string>ActionList</string>
 			<key>key</key>
 			<string>singleClickAction</string>
 			<key>label</key>
@@ -30,7 +30,7 @@
 			<key>cell</key>
 			<string>PSLinkCell</string>
 			<key>detail</key>
-			<string>ABMCActionListController</string>
+			<string>ActionList</string>
 			<key>key</key>
 			<string>doubleClickAction</string>
 			<key>label</key>

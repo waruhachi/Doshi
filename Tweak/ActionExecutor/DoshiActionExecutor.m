@@ -168,7 +168,7 @@ BOOL DoshiPerformingDefaultAction = NO;
 		SEL fullSetSel = NSSelectorFromString(@"setRingerMuted:withFeedback:reason:clientType:");
 		if ([ringerControl respondsToSelector:fullSetSel]) {
 			((void (*)(id, SEL, BOOL, BOOL, id, unsigned))objc_msgSend)(
-				ringerControl, fullSetSel, !isMuted, YES, @"RealActionButton", 0);
+				ringerControl, fullSetSel, !isMuted, YES, @"Doshi", 0);
 			return;
 		}
 

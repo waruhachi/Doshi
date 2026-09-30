@@ -1,6 +1,6 @@
 BUNDLE_NAME = DoshiPreferences
 
-$(BUNDLE_NAME)_FILES = $(wildcard Controllers/*.m) $(wildcard Preferences/*.m)
+$(BUNDLE_NAME)_FILES = $(wildcard Controllers/*.m) $(wildcard ActionList/*.m)
 $(BUNDLE_NAME)_CFLAGS = -fobjc-arc
 $(BUNDLE_NAME)_FRAMEWORKS = UIKit
 $(BUNDLE_NAME)_PRIVATE_FRAMEWORKS = Preferences

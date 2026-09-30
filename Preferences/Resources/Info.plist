@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>RealActionButton</string>
+	<string>DoshiPreferences</string>
 	<key>CFBundleIdentifier</key>
 	<string>moe.waru.doshi.preferences</string>
 	<key>CFBundleInfoDictionaryVersion</key>
